@@ -1,26 +1,22 @@
 #include <iostream>
 using namespace std;
 
-
 int determinant(const int matrix[][2]){
     return matrix[0][0]*matrix[1][1] - matrix[0][1]*matrix[1][0];
 }
 
-
-
 int modularInverse(int x, int m){
     // x and m must be coprimes for modular inverse to exist
-    x = x % m;
+    x = (x % m+m)%m;
     for(int i = 1; i < m; i++){
         if((x * i)%m == 1){
-            return x;
+            return i;
         }
     }
     return -1;
 }
 
-
-bool inverseExists(const int matrix[][2]){
+int inverseExists(const int matrix[][2]){
     int det = determinant(matrix);
     if(det == 0){
         cout << "Matrix is not invertible!";
@@ -35,40 +31,48 @@ bool inverseExists(const int matrix[][2]){
     return modInvDet;
 }
 
-
 void inverse(int matrix[][2], int inv[][2], int modInvDet){
-    inv[0][0] = matrix[1][1] * modInvDet;
-    inv[0][1] = -matrix[0][1] * modInvDet;
-    inv[1][0] = -matrix[1][0] * modInvDet;
-    inv[1][1] = matrix[0][0] * modInvDet;
+    for(int i=0; i<2; i++){
+        for(int j=0; j<2; j++){
+            if(i==j) inv[i][j] = matrix[1-i][1-j] * modInvDet;
+            else inv[i][j] = -matrix[i][j] * modInvDet; 
+            inv[i][j] = ((inv[i][j]%26)+26)%26;
+        }
+    }
 }
 
-
-string encrypt(string text, int key[][2]){
+string hill(string text, int key[][2]){
     int len = text.length();
     
     if(len & 1){
         text.append("x");
         len++;
     }
-    string encrypt;
+    string text2;
     for(int i=0; i<len; i+=2){
         int ch1 = (char)tolower(text[i]) - 'a';
         int ch2 = (char)tolower(text[i+1]) - 'a';
-        int en1 = (ch1*key[0][0] + ch2*key[1][0])%26;
-        int en2 = (ch1*key[0][1] + ch2*key[1][1])%26;
-        encrypt[i] = en1 + 'a';
-        encrypt[i+1] = en2 + 'a';
+        int en1 = (ch1*key[0][0] + ch2*key[0][1])%26;
+        int en2 = (ch1*key[1][0] + ch2*key[1][1])%26;
+        text2 += (en1 + 'a');
+        text2 += (en2 + 'a');
     }
     
-    return encrypt;
+    return text2;
 }
-
 
 int main(){
     int key[2][2], modInvDet;
-    cout << "Enter Key matrix of order 2: ";
-    cin >> key[0][0] >> key[0][1] >> key[1][0] >> key[1][1];
+    string k;
+
+    cout << "Enter Key(string) of length 4: ";
+    cin >> k;
+    
+    for(int i=0; i<2; i++){
+        for(int j=0; j<2; j++){
+            key[i][j] = k[i*2+j] - 'a';
+        }
+    }
 
     modInvDet = inverseExists(key);
     if(modInvDet == 0){
@@ -79,11 +83,14 @@ int main(){
     cout << "Enter Plain Text: ";
     cin >> text;
 
-    string ans = encrypt(text, key);
-    cout << "Encryped: " << ans << endl;
+    string cipherText = hill(text, key);
+    cout << "Encrypted: " << cipherText << endl;
 
     int inv[2][2];
     inverse(key, inv, modInvDet);
+
+    string plainText = hill(cipherText, inv);
+    cout << "Plain Text: " << plainText << endl;
 
     return 0;
 }
